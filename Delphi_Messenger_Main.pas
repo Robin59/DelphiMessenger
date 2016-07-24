@@ -7,6 +7,9 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, IPPeerClient, IPPeerServer, System.Tether.Manager, System.Tether.AppProfile, System.Actions,
   Vcl.ActnList, Vcl.ComCtrls;
 
+const
+  _TETHERING_MANAGER_TEXT_='TetheringManager_RGMessenger';
+  _TETHERING_PROFILE_TEXT_='TetheringAppProfile_RGMessenger';
 type
   TForm_Messenger_Main = class(TForm)
     Edit_Sended_Message: TEdit;
@@ -21,6 +24,7 @@ type
     procedure TetheringManagerRequestManagerPassword(const Sender: TObject; const ARemoteIdentifier: string; var Password: string);
     procedure TetheringManagerEndManagersDiscovery(const Sender: TObject; const ARemoteManagers: TTetheringManagerInfoList);
     procedure TetheringManagerEndProfilesDiscovery(const Sender: TObject; const ARemoteProfiles: TTetheringProfileInfoList);
+    procedure TetheringAppProfileResourceReceived(const Sender: TObject; const AResource: TRemoteResource);
   private
     { Déclarations privées }
     User_Id:String;
@@ -45,8 +49,27 @@ BEGIN
 END;
 
 procedure TForm_Messenger_Main.Button_Send_MessageClick(Sender: TObject);
+
+  procedure Send_String_To_Others_Messenger(const xSenderID, xMessageToSend:String);
+  var
+    i_RemoteProfile: TTetheringProfileInfo;
+  begin
+    try
+      for i_RemoteProfile in TetheringManager.RemoteProfiles
+        do TetheringAppProfile.SendString(i_RemoteProfile, xSenderID, xMessageToSend);
+    except
+      on E : ETetheringException do
+          begin
+            //to do
+            ShowMessage(E.ClassName+' Error in Send_String_To_Others_Messenger procedure : '+E.Message);
+          end;
+      on E : Exception
+        do ShowMessage(E.ClassName+' Error in Send_String_To_Others_Messenger procedure : '+E.Message);
+    end;
+  end;
+
 begin
-  //send message with the tthering
+  Send_String_To_Others_Messenger(User_Id,Edit_Sended_Message.Text);
   //to do
   Add_Message_to_RichEdit(User_Id,Edit_Sended_Message.Text);
   Edit_Sended_Message.Text:='';
@@ -74,21 +97,46 @@ procedure TForm_Messenger_Main.FormCreate(Sender: TObject);
   end;
 
 begin
+  TetheringAppProfile.Text:=_TETHERING_PROFILE_TEXT_;
+  TetheringManager.Text:=_TETHERING_MANAGER_TEXT_;
   session_password:='Temp_Password';// to do : change the password system
   RichEdit.Text:='';
   User_Id:=Get_ID;
   TetheringManager.Password:=session_password;
-  //TetheringManager.DiscoverManagers;
+  TetheringManager.DiscoverManagers;
+end;
+
+procedure TForm_Messenger_Main.TetheringAppProfileResourceReceived(const Sender: TObject; const AResource: TRemoteResource);
+begin
+  if AResource.ResType = TRemoteResourceType.Data then
+    begin
+       Add_Message_to_RichEdit('Received : ',AResource.Value.AsString);
+    end;
 end;
 
 procedure TForm_Messenger_Main.TetheringManagerEndManagersDiscovery(const Sender: TObject; const ARemoteManagers: TTetheringManagerInfoList);
+var
+  i_Manager:Smallint;
 begin
-  //to do
+  FOR i_Manager := 0 to ARemoteManagers.Count - 1 DO
+    BEGIN
+      IF (ARemoteManagers[I_Manager].ManagerText=_TETHERING_MANAGER_TEXT_)
+        THEN TetheringManager.PairManager(ARemoteManagers[I_Manager]);
+    END;
 end;
 
 procedure TForm_Messenger_Main.TetheringManagerEndProfilesDiscovery(const Sender: TObject; const ARemoteProfiles: TTetheringProfileInfoList);
+var
+  i_Profile:SmallInt;
 begin
-  // to do
+  for i_Profile:=0 to TetheringManager.RemoteProfiles.Count-1 do
+   begin
+     if(TetheringManager.RemoteProfiles[i_Profile].ProfileText=_TETHERING_PROFILE_TEXT_) then
+       begin
+            TetheringAppProfile.Connect(TetheringManager.RemoteProfiles[i_Profile]);
+            //index_profile:=i_Profile;
+       end;
+   end
 end;
 
 procedure TForm_Messenger_Main.TetheringManagerRequestManagerPassword(const Sender: TObject; const ARemoteIdentifier: string; var Password: string);

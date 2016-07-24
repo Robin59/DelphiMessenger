@@ -50,9 +50,10 @@ object Form_Messenger_Main: TForm_Messenger_Main
   end
   object TetheringAppProfile: TTetheringAppProfile
     Manager = TetheringManager
-    Text = 'TetheringAppProfile_RGMessenger'
+    Text = '@OnCreate'
     Actions = <>
     Resources = <>
+    OnResourceReceived = TetheringAppProfileResourceReceived
     Left = 312
     Top = 164
   end
@@ -60,10 +61,10 @@ object Form_Messenger_Main: TForm_Messenger_Main
     OnEndManagersDiscovery = TetheringManagerEndManagersDiscovery
     OnEndProfilesDiscovery = TetheringManagerEndProfilesDiscovery
     OnRequestManagerPassword = TetheringManagerRequestManagerPassword
-    Text = 'TetheringManager_RGMessenger'
+    Text = '@OnCreate'
     AllowedAdapters = 'Network'
     Left = 192
-    Top = 164
+    Top = 168
   end
   object ActionList: TActionList
     Left = 376
